@@ -153,9 +153,9 @@ def batch_grad_descent(X, y, alpha=0.1, num_iter=1000, check_gradient=False):
         loss_hist       - the history of objective function vector, 1D numpy array of size (num_iter+1) 
     """
     num_instances, num_features = X.shape[0], X.shape[1]
-    theta_hist = np.zeros((num_iter+1, num_features))  #Initialize theta_hist
-    loss_hist  = np.zeros(num_iter+1) #initialize loss_hist
-    theta  = np.ones(num_features) #initialize theta
+    theta_hist = np.zeros((num_iter+1, num_features))       #Initialize theta_hist
+    loss_hist  = np.zeros(num_iter+1)                       #initialize loss_hist
+    theta  = np.ones(num_features)                          #initialize theta
 
     count  = 0
     while count < num_iter+1:
@@ -351,7 +351,6 @@ def compare(X_train,y_train,X_test,y_test,dialation=10.):
     plt.plot(np.log(l2),'r--')
     plt.show()
     plt.close()
-
 
 if __name__ == "__main__":
     (X_train, y_train), (X_test,y_test) = main()
