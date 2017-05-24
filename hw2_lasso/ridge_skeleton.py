@@ -20,7 +20,7 @@ def compute_loss(Lambda, theta):
 ##### Question 1.1
 class LinearSystem(object):
 	def __init__(self,m=150,d=75,p=.5):
-		"""Produces pairs of variables (X_i , y_i ) related by y_i = w * X_i + e
+		"""Produces pairs of variables (X_i , y_i) related by y_i = w * X_i + e
 
 		Parameters
 		__________
@@ -179,7 +179,27 @@ def lasso(X,y,lamb,w_init=None,eps=10e-6):
 		diff = np.linalg.norm(w-w_old)
 	return w
 
-def lasso_experiments():
+def lasso_select_lambda(X_train,y_train,X_valid,y_valid,lambdas=(1e-6,1e-4,1e-2,.1),plot_results=False):
+	assert type(lambdas) is tuple and lambdas
+
+	validation_losses = []
+	min_loss = np.inf
+	for lamb in lambdas:
+		w = lasso(X_train,y_train,lamb)
+		validation_loss = compute_square_loss(X_valid,y_valid,w)
+		validation_losses.append((lamb,validation_loss))
+		if validation_loss < min_loss:
+			min_loss = validation_loss
+			arg_min = w
+	
+	if plot_results:
+        plt.plot(np.log(lambdas),validation_losses,'r--')
+        plt.show()
+        plt.close()
+        
+	return arg_min
+
+def lasso_experiments(X_train,y_train):
 	pass
 
 if __name__=='__main__':
