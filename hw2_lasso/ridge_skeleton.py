@@ -179,32 +179,63 @@ def lasso(X,y,lamb,w_init=None,eps=10e-6):
 		diff = np.linalg.norm(w-w_old)
 	return w
 
-def lasso_select_lambda(X_train,y_train,X_valid,y_valid,lambdas=(1e-6,1e-4,1e-2,.1),plot_results=False):
+def lambda_lasso_cross_validation(X_train,y_train,X_valid,y_valid,lambdas=(1e-6,1e-4,1e-2,.1),plot_results=False):
+	"""Performs hyperparameter selection for lasso regression
+
+	Parameters
+	__________ 
+
+	X_train, y_train : type np.arrays 
+		training set
+	X_valid, y_valid : type np.arrays 
+		validation set 
+	lambdas : type tuple 
+		tuple of lambdas to be validated 
+	plot_results : type bool
+		if true, plots validation error against lambda
+
+	Returns
+	_______ 
+
+	opt_lambda : type np.array 
+		optimal hyperparameter lambda"""
+
 	assert type(lambdas) is tuple and lambdas
 
-	validation_losses = []
 	min_loss = np.inf
+	validation_losses = []
 	for lamb in lambdas:
 		w = lasso(X_train,y_train,lamb)
 		validation_loss = compute_square_loss(X_valid,y_valid,w)
 		validation_losses.append((lamb,validation_loss))
 		if validation_loss < min_loss:
 			min_loss = validation_loss
-			arg_min = w
-	
-	if plot_results:
-        plt.plot(np.log(lambdas),validation_losses,'r--')
-        plt.show()
-        plt.close()
-        
-	return arg_min
+			opt_lambda,opt_w = lamb, w
 
-def lasso_experiments(X_train,y_train):
+	if plot_results:
+		plt.plot(np.log(lambdas),validation_losses,'r--')
+		plt.show()
+		plt.close()
+
+	return opt_lambda, opt_w, min_loss
+
+def homotopy_selection():
 	pass
+
+def lasso_experiments():
+	print "generating data...\n"
+	L = LinearSystem()
+	train, valid, test = L.split()
+
+	print "selecting hyperparameter...\n"
+	lamb, w, loss = lambda_lasso_cross_validation(train[0],train[1],valid[0],valid[1])
+
+	p = percent_match_supports(w,L.theta)
+	print "supports match percent {}%".format(100*p)
 
 if __name__=='__main__':
 
-	ridge_experiments()	
+	lasso_experiments()	
 	
 	if False:
 
