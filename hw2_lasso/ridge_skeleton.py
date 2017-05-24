@@ -7,9 +7,7 @@ sys.path.insert(0, path.abspath(path.join(__file__ ,"../..")))
 import numpy as np
 
 from scipy.optimize import minimize
-from hw1_sgd.hw1_skeleton_code import regularized_batch_gradient_descent_plotter
-
-# from hw1_sgd import regularized_batch_gradient_descent_plotter
+from hw1_sgd.hw1_skeleton_code import regularized_grad_descent, regularized_batch_gradient_descent_plotter, compute_square_loss
 
 def ridge(Lambda):
 	def ridge_obj(theta):
@@ -19,7 +17,7 @@ def ridge(Lambda):
 def compute_loss(Lambda, theta):
 	return ((numpy.linalg.norm(numpy.dot(X,theta) - y))**2)/(2*N)
 
-##### Question 1
+##### Question 1.1
 class LinearSystem(object):
 	def __init__(self,m=150,d=75,p=.5):
 		"""Produces pairs of variables (X_i , y_i ) related by y_i = w * X_i + e
@@ -102,11 +100,6 @@ class LinearSystem(object):
 		test_set = (self.X[101:],self.y[101:])
 		return train_set, valid_set, test_set
 
-##### Question 2
-def soft(a,delta):
-	"""soft threshold function, used for update step in lasso algorithm"""
-	return np.sign(a)*max(np.abs(a)-delta,0)
-
 def percent_match_supports(w,theta,threshold=2.):
 	"""returns fraction of supports shared by w, theta 
 
@@ -117,8 +110,34 @@ def percent_match_supports(w,theta,threshold=2.):
 			(abs(x) < threshold and abs(y) < 1e-6) else 0 for (x,y) in z ]
 	return sum(supp)/len(supp)
 
+
+##### Question 1.2
+def ridge_experiments():
+	print "generating data...\n"
+	L = LinearSystem()
+	train, valid, test = L.split()
+	
+	print "selecting optimal regularization parameter...\n"
+	lambda_losses = regularized_batch_gradient_descent_plotter(train[0], train[1], valid[0], valid[1])
+	lambda_losses = np.array(lambda_losses)
+	opt_lambda = lambda_losses[np.argmin(lambda_losses,axis=0)[1]][0]
+	
+	w_hist, _ = regularized_grad_descent(train[0],train[1],lambda_reg=opt_lambda)
+	w = w_hist[-1]
+
+	p = percent_match_supports(w,L.theta,threshold=0.)
+	print "\nsupports of w and theta match {}%".format(100*p)
+
+	p = percent_match_supports(w,L.theta)
+	print "\nsupports of w and theta match {}% below threshold of {}".format(100*p, 1e-4)
+
+##### Question 2
+def soft(a,delta):
+	"""soft threshold function, used for update step in lasso algorithm"""
+	return np.sign(a)*max(np.abs(a)-delta,0)
+
 def lasso(X,y,lamb,w_init=None,eps=10e-6):
-	"""Implements lasso algorithm for regularized linear regression.
+	"""Implements lasso shooting algorithm for regularized linear regression.
 	
 	Parameters
 	__________
@@ -149,30 +168,23 @@ def lasso(X,y,lamb,w_init=None,eps=10e-6):
 
 	diff = np.inf
 	while diff > eps:
-		w_old = w.copy()
+		w_old = w
 		for j in xrange(D):
 			a_j = 2*X[:,j].dot(X[:,j])
 			c_j = 2*X[:,j].dot(y - X.dot(w) + w[j]*X[:,j])
-			w[j] = soft(c_j/a_j,lamb/a_j)
+			if a_j == 0. and c_j == 0.:
+				w[j] = 0.
+			else:
+				w[j] = soft(c_j/a_j,lamb/a_j)
 		diff = np.linalg.norm(w-w_old)
 	return w
 
-def main():
-	L = LinearSystem()
-	train, valid, test = L.split()
-	
-	lambda_losses = regularized_batch_gradient_descent_plotter(train[0], train[1], valid[0], valid[1])
-	lambda_losses = np.array(lambda_losses)
-	opt_lambda = lambda_losses[np.argmin(lambda_losses,axis=0)[1]][0]
-	
-	w = lasso(train[0],train[1],opt_lambda)
-	p = percent_match_supports(w,L.theta)
-
-	print "\nsupports of w and theta match {}%".format(100*p)
+def lasso_experiments():
+	pass
 
 if __name__=='__main__':
 
-	main()	
+	ridge_experiments()	
 	
 	if False:
 
