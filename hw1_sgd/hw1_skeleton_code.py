@@ -245,26 +245,51 @@ def regularized_grad_descent(X, y, alpha=0.01, lambda_reg=1e-6, num_iter=1000):
 ##X-axis: log(lambda_reg)
 ##Y-axis: square_loss
 # optimal lambda typically around 10e-7 or 10e-5
-def regularized_batch_gradient_descent_plotter(X_train,y_train,X_valid,y_valid,
-    lambdas=(1e-6,1e-4,1e-2,1e-1,1.,10.,100.),alpha=.01):
+def regularized_batch_gradient_descent_plotter(X_train,y_train,X_valid,y_valid, lambdas=(1e-6,1e-4,1e-2,1e-1,1.,10.,100.),alpha=.01,plot_results=False):
+    
+    """performs l2 regularized regression on X_train and y_train for each lambda in lambdas
+
+    Parameters 
+    __________
+
+    X_train, y_train : type np.arrays
+        training set 
+
+    X_valid, y_valid : type np.arrays 
+        validation set 
+
+    lambdas : type tuple 
+        tuple of regularization constants
+
+    alpha : type float 
+        learning rate
+
+    Returns
+    _______ 
+
+    zip(lambas, test_losses)
+        array mapping lambdas to losses on validation set
+
+    """
 
     train_losses = []
-    test_losses = []
+    validation_losses = []
     lambdas = list(lambdas)
     lambdas.sort()
 
     for lamb in lambdas:
-        thetas, train_loss = regularized_grad_descent(X_train,y_train,alpha,lamb)
-        test_loss = compute_square_loss(X_valid,y_valid,thetas[-1])
-        train_losses.append(train_loss[-1])
-        test_losses.append(test_loss)
+        print "running regularized l2 gradient descent with lambda = {}...".format(lamb)
+        thetas, losses = regularized_grad_descent(X_train,y_train,alpha,lamb)
+        train_losses.append(losses[-1])
+        validation_losses.append(compute_square_loss(X_valid,y_valid,thetas[-1]))
 
-    plt.plot(np.log(lambdas),train_losses,'b--')
-    plt.plot(np.log(lambdas),test_losses,'r--')
-    plt.show()
-    plt.close()
+    if plot_results:
+        plt.plot(np.log(lambdas),train_losses,'b--')
+        plt.plot(np.log(lambdas),validation_losses,'r--')
+        plt.show()
+        plt.close()
 
-    return zip(lambdas,test_losses)
+    return zip(lambdas,validation_losses)
 
 #############################################
 ###Q2.6a: Stochastic Gradient Descent
@@ -339,7 +364,9 @@ def main(bias=1.):
     
     return (X_train, y_train), (X_test,y_test)
 
-def compare(X_train,y_train,X_test,y_test,dialation=10.):
+def distorted_data(X_train,y_train,X_test,y_test,dialation=10.):
+    """compares regression on whitened to data to regression on distorted data"""
+
     t,l1 = regularized_grad_descent(X_train,y_train,lambda_reg=1e-6)
 
     X_train[:,0] *= dialation
