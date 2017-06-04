@@ -9,6 +9,7 @@ import numpy as np
 from scipy.optimize import minimize
 from hw1_sgd.hw1_skeleton_code import regularized_grad_descent, regularized_batch_gradient_descent_plotter, compute_square_loss
 
+##### global helper functions
 def ridge(Lambda):
 	def ridge_obj(theta):
 		return ((numpy.linalg.norm(numpy.dot(X,theta) - y))**2)/(2*N) + Lambda*(numpy.linalg.norm(theta))**2
@@ -16,6 +17,16 @@ def ridge(Lambda):
 
 def compute_loss(Lambda, theta):
 	return ((numpy.linalg.norm(numpy.dot(X,theta) - y))**2)/(2*N)
+
+def percent_match_supports(w,theta,threshold=2.):
+	"""returns fraction of supports shared by w, theta 
+
+	if support of w > threshold is same as theta"""
+	assert w.shape == theta.shape
+	z = zip(w,theta)
+	supp = [1 if (abs(x) > threshold and abs(y) > 0) or \
+			(abs(x) < threshold and abs(y) < 1e-6) else 0 for (x,y) in z ]
+	return sum(supp)/len(supp)
 
 ##### Question 1.1
 class LinearSystem(object):
@@ -100,16 +111,6 @@ class LinearSystem(object):
 		test_set = (self.X[101:],self.y[101:])
 		return train_set, valid_set, test_set
 
-def percent_match_supports(w,theta,threshold=2.):
-	"""returns fraction of supports shared by w, theta 
-
-	if support of w > threshold is same as theta"""
-	assert w.shape == theta.shape
-	z = zip(w,theta)
-	supp = [1 if (abs(x) > threshold and abs(y) > 0) or \
-			(abs(x) < threshold and abs(y) < 1e-6) else 0 for (x,y) in z ]
-	return sum(supp)/len(supp)
-
 
 ##### Question 1.2
 def ridge_experiments():
@@ -176,6 +177,7 @@ def lasso(X,y,lamb,w_init=None,eps=10e-6):
 				w[j] = 0.
 			else:
 				w[j] = soft(c_j/a_j,lamb/a_j)
+		# TODO : better convergence criterion?
 		diff = np.linalg.norm(w-w_old)
 	return w
 
@@ -219,10 +221,31 @@ def lambda_lasso_cross_validation(X_train,y_train,X_valid,y_valid,lambdas=(1e-6,
 
 	return opt_lambda, opt_w, min_loss
 
-def homotopy_selection():
-	pass
+def homotopy_selection(scaling_factor=.9,eps=1e-6):
+
+	print "generating data...\n"
+	L = LinearSystem()
+	train, valid, test = L.split()
+
+
+	X, y = train[0],train[1]
+	dim  = train.shape[1]
+
+	# initialize w and lambda to 0 and lambda_max
+	w    = np.zeros(dim)
+	lamb = 2*np.max(X.T.dot(y))
+
+	diff = np.inf
+	while diff > eps:
+		w_old = w
+		w = lasso(X,y,lamb,w_init=w)
+		lamb = scaling_factor*lamb
+		diff = np.linalg.norm(w_old-w)
+	return w
 
 def lasso_experiments():
+	"""Experiments with lasso regression."""
+
 	print "generating data...\n"
 	L = LinearSystem()
 	train, valid, test = L.split()
@@ -232,6 +255,9 @@ def lasso_experiments():
 
 	p = percent_match_supports(w,L.theta)
 	print "supports match percent {}%".format(100*p)
+
+def feature_correlation():
+	pass
 
 if __name__=='__main__':
 
