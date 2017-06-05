@@ -18,7 +18,7 @@ def ridge(Lambda):
 def compute_loss(Lambda, theta):
 	return ((numpy.linalg.norm(numpy.dot(X,theta) - y))**2)/(2*N)
 
-def percent_match_supports(w,theta,threshold=2.):
+def percent_match_supports(w,theta,threshold=1e-4):
 	"""returns fraction of supports shared by w, theta 
 
 	if support of w > threshold is same as theta"""
@@ -30,7 +30,7 @@ def percent_match_supports(w,theta,threshold=2.):
 
 ##### Question 1.1
 class LinearSystem(object):
-	def __init__(self,m=150,d=75,p=.5):
+	def __init__(self,m=150,d=75,p=.5,var=1.0):
 		"""Produces pairs of variables (X_i , y_i) related by y_i = w * X_i + e
 
 		Parameters
@@ -46,6 +46,7 @@ class LinearSystem(object):
 		self.m = m
 		self.d = d
 		self.p = p
+		self.var = var
 
 		self.design_matrix()
 		self.theta()
@@ -90,7 +91,7 @@ class LinearSystem(object):
 
 	def y(self):
 		"""generates outputs y = X.dot(theta) + e, e ~ N(0,1)"""
-		self.y = self.X.dot(self.theta) + np.random.randn(self.m)
+		self.y = self.X.dot(self.theta) + self.var*np.random.randn(self.m)
 
 	def split(self):
 		"""splits data into train, validation, and test sets.
@@ -113,24 +114,26 @@ class LinearSystem(object):
 
 
 ##### Question 1.2
-def ridge_experiments():
+def ridge_experiments(lambdas=(1e-6,1e-4),var=4.0):
 	print "generating data...\n"
-	L = LinearSystem()
+	L = LinearSystem(var=var)
 	train, valid, test = L.split()
 	
 	print "selecting optimal regularization parameter...\n"
-	lambda_losses = regularized_batch_gradient_descent_plotter(train[0], train[1], valid[0], valid[1])
+	lambda_losses = regularized_batch_gradient_descent_plotter(train[0], train[1], valid[0], valid[1],lambdas=lambdas)
 	lambda_losses = np.array(lambda_losses)
 	opt_lambda = lambda_losses[np.argmin(lambda_losses,axis=0)[1]][0]
+
+	print "optimal regularization parameter selected {}\n".format(opt_lambda)
 	
 	w_hist, _ = regularized_grad_descent(train[0],train[1],lambda_reg=opt_lambda)
 	w = w_hist[-1]
 
 	p = percent_match_supports(w,L.theta,threshold=0.)
-	print "\nsupports of w and theta match {}%".format(100*p)
+	print "\n","supports of w and theta match {}% below threshold of 0.".format(100*p)
 
-	p = percent_match_supports(w,L.theta)
-	print "\nsupports of w and theta match {}% below threshold of {}".format(100*p, 1e-4)
+	p = percent_match_supports(w,L.theta,threshold=2.)
+	print "supports of w and theta match {}% below threshold of {}".format(100*p, 2.)
 
 ##### Question 2
 def soft(a,delta):
@@ -164,7 +167,7 @@ def lasso(X,y,lamb,w_init=None,eps=10e-6):
 	if w_init is None:
 		w = np.linalg.inv(X.T.dot(X) + lamb*np.eye(D)).dot( X.T.dot(y) )
 	else:
-		assert type(w_init) is float
+		# assert type(w_init) is float
 		w = w_init
 
 	diff = np.inf
@@ -229,38 +232,53 @@ def homotopy_selection(scaling_factor=.9,eps=1e-6):
 
 
 	X, y = train[0],train[1]
-	dim  = train.shape[1]
+	dim  = X.shape[1]
 
 	# initialize w and lambda to 0 and lambda_max
-	w    = np.zeros(dim)
+	w = np.zeros(dim)
 	lamb = 2*np.max(X.T.dot(y))
 
 	diff = np.inf
-	while diff > eps:
+	c = 0
+	while diff > eps and c < 1000:
+		
 		w_old = w
 		w = lasso(X,y,lamb,w_init=w)
-		lamb = scaling_factor*lamb
-		diff = np.linalg.norm(w_old-w)
+		print "weights {}".format(w)
+
+		lamb *= scaling_factor
+		diff = (w_old-w).dot(w_old-w)
+		print diff
+		c += 1
+	
 	return w
 
-def lasso_experiments():
+def lasso_experiments(var=4.0):
 	"""Experiments with lasso regression."""
 
 	print "generating data...\n"
-	L = LinearSystem()
+	L = LinearSystem(var=var)
 	train, valid, test = L.split()
 
 	print "selecting hyperparameter...\n"
 	lamb, w, loss = lambda_lasso_cross_validation(train[0],train[1],valid[0],valid[1])
 
-	p = percent_match_supports(w,L.theta)
-	print "supports match percent {}%".format(100*p)
+	print "optimal hyperparameter selected {}".format(lamb)
+
+	p = percent_match_supports(w,L.theta,threshold=.0)
+	print "supports of w and theta match percent {}% below a threshold of 0.".format(100*p)
+
+	p = percent_match_supports(w,L.theta,threshold=2.)
+	print "supports of w and theta match percent {}% below a threshold of {}".format(100*p,2.)
 
 def feature_correlation():
 	pass
 
 if __name__=='__main__':
 
+	# homotopy_selection()
+	ridge_experiments()
+	print "\n"
 	lasso_experiments()	
 	
 	if False:

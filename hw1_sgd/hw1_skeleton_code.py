@@ -265,7 +265,7 @@ def regularized_grad_descent(X, y, alpha=0.01, lambda_reg=1e-6, num_iter=1000):
 ##Y-axis: square_loss
 # optimal lambda typically around 10e-7 or 10e-5
 def regularized_batch_gradient_descent_plotter(X_train,y_train,X_valid,y_valid,
-    lambdas=(1e-6,1e-4,1e-2,1e-1,1.,10.,100.),alpha=.01,plot_results=False):
+    lambdas=(0.,1e-6,1e-4,1e-2,1e-1,1.,10.,100.),alpha=.01,plot_results=False):
     """performs l2 regularized regression on X_train and y_train for each lambda in lambdas
 
     Parameters 
@@ -301,6 +301,8 @@ def regularized_batch_gradient_descent_plotter(X_train,y_train,X_valid,y_valid,
         validation_losses.append(compute_square_loss(X_valid,y_valid,thetas[-1]))
 
     if plot_results:
+        if 0. in lambdas:
+            print "warning: value of 0 found in lambdas, cannot plot on log scale!"
         plt.plot(np.log(lambdas),train_losses,'b--')
         plt.plot(np.log(lambdas),validation_losses,'r--')
         plt.show()
