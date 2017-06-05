@@ -173,6 +173,25 @@ def batch_grad_descent(X, y, alpha=0.1, num_iter=1000, check_gradient=False):
 ###############################################
 # batch gradient descient plotter
 def batch_gradient_descent_plotter(X,y,alphas):
+    """Computes losses on training set for a variety of learning rates in alphas.
+
+    Parameters
+    __________ 
+
+    X : type np.array 
+        design matrix 
+
+    y : type np.array 
+        outputs
+
+    alphas : type list 
+        list of learning rates 
+
+    Returns
+    _______
+
+    zip(alphas,losses) 
+        zipped array mapping learning rates to losses on training set"""
     
     losses = []
     alphas.sort()
@@ -245,8 +264,8 @@ def regularized_grad_descent(X, y, alpha=0.01, lambda_reg=1e-6, num_iter=1000):
 ##X-axis: log(lambda_reg)
 ##Y-axis: square_loss
 # optimal lambda typically around 10e-7 or 10e-5
-def regularized_batch_gradient_descent_plotter(X_train,y_train,X_valid,y_valid, lambdas=(1e-6,1e-4,1e-2,1e-1,1.,10.,100.),alpha=.01,plot_results=False):
-    
+def regularized_batch_gradient_descent_plotter(X_train,y_train,X_valid,y_valid,
+    lambdas=(1e-6,1e-4,1e-2,1e-1,1.,10.,100.),alpha=.01,plot_results=False):
     """performs l2 regularized regression on X_train and y_train for each lambda in lambdas
 
     Parameters 
@@ -268,9 +287,7 @@ def regularized_batch_gradient_descent_plotter(X_train,y_train,X_valid,y_valid, 
     _______ 
 
     zip(lambas, test_losses)
-        array mapping lambdas to losses on validation set
-
-    """
+        array mapping lambdas to losses on validation set"""
 
     train_losses = []
     validation_losses = []
@@ -381,5 +398,7 @@ def distorted_data(X_train,y_train,X_test,y_test,dialation=10.):
 
 if __name__ == "__main__":
     (X_train, y_train), (X_test,y_test) = main()
+    regularized_batch_gradient_descent_plotter(X_train,y_train,X_test,y_test,plot_results=True)
+    
     
         
