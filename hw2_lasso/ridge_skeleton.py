@@ -30,7 +30,7 @@ def percent_match_supports(w,theta,threshold=1e-4):
 
 ##### Question 1.1
 class LinearSystem(object):
-	def __init__(self,m=150,d=75,p=.5,var=1.0):
+	def __init__(self,m=150,d=40,p=.5,var=1.0):
 		"""Produces pairs of variables (X_i , y_i) related by y_i = w * X_i + e
 
 		Parameters
@@ -93,7 +93,7 @@ class LinearSystem(object):
 		"""generates outputs y = X.dot(theta) + e, e ~ N(0,1)"""
 		self.y = self.X.dot(self.theta) + self.var*np.random.randn(self.m)
 
-	def split(self):
+	def split(self,t_size=60,valid_size=20):
 		"""splits data into train, validation, and test sets.
 
 		Returns
@@ -107,14 +107,14 @@ class LinearSystem(object):
 			test set
 		"""
 
-		train_set = (self.X[:80], self.y[:80])
-		valid_set = (self.X[80:101],self.y[80:101])
-		test_set = (self.X[101:],self.y[101:])
+		train_set = (self.X[:t_size], self.y[:t_size])
+		valid_set = (self.X[t_size:t_size+valid_size+1],self.y[t_size:t_size+valid_size+1])
+		test_set = (self.X[valid_size+1:],self.y[valid_size+1:])
 		return train_set, valid_set, test_set
 
 
 ##### Question 1.2
-def ridge_experiments(lambdas=(1e-6,1e-4),var=4.0):
+def ridge_experiments(lambdas=(1e-6,1e-4,1e-2,.1),var=1.0):
 	print "generating data...\n"
 	L = LinearSystem(var=var)
 	train, valid, test = L.split()
@@ -253,7 +253,7 @@ def homotopy_selection(scaling_factor=.9,eps=1e-6):
 	
 	return w
 
-def lasso_experiments(var=4.0):
+def lasso_experiments(var=1.0):
 	"""Experiments with lasso regression."""
 
 	print "generating data...\n"
