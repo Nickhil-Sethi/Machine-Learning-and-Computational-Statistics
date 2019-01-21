@@ -1,5 +1,7 @@
 from __future__ import division 
 
+from pprint import pprint
+
 import sys
 import os.path as path
 sys.path.insert(0, path.abspath(path.join(__file__ ,"../..")))
@@ -18,15 +20,20 @@ def ridge(Lambda):
 def compute_loss(Lambda, theta):
 	return ((numpy.linalg.norm(numpy.dot(X,theta) - y))**2)/(2*N)
 
-def percent_match_supports(w,theta,threshold=1e-4):
+def percent_match_supports(w,theta,threshold=1e-1):
 	"""returns fraction of supports shared by w, theta 
 
 	if support of w > threshold is same as theta"""
-	assert w.shape == theta.shape
-	z = zip(w,theta)
-	supp = [1 if (abs(x) > threshold and abs(y) > 0) or \
-			(abs(x) < threshold and abs(y) < 1e-6) else 0 for (x,y) in z ]
-	return sum(supp)/len(supp)
+	supp_theta = np.array([1. if abs(t) > 0. else 0. for t in theta])
+	supp_w = np.array([1. if abs(e) > 0. else 0. for e in w])
+	d = np.dot(supp_theta, supp_w)
+	return d/sum(supp_theta)
+
+def percent_match_complement_support(w, theta, threshold=1e-1):
+	supp_theta = np.array([1. if abs(t) == 0. else 0. for t in theta])
+	supp_w = np.array([1. if abs(e) < threshold else 0. for e in w])
+	d = np.dot(supp_theta, supp_w)
+	return d/sum(supp_theta)
 
 ##### Question 1.1
 class LinearSystem(object):
@@ -77,13 +84,13 @@ class LinearSystem(object):
 		
 		self.theta = np.zeros(self.d)
 		if fixed_theta:
-			for i in xrange(10):
+			for i in range(10):
 				if i%2==0:
 					self.theta[i] = 10.
 				else:
 					self.theta[i] = -10.
 		else:
-			for i in xrange(10):
+			for i in range(10):
 				if np.random.rand() < self.p:
 					self.theta[i] = 10.
 				else:
@@ -114,26 +121,22 @@ class LinearSystem(object):
 
 
 ##### Question 1.2
-def ridge_experiments(lambdas=(1e-6,1e-4,1e-2,.1),var=1.0):
-	print "generating data...\n"
-	L = LinearSystem(var=var)
-	train, valid, test = L.split()
+def ridge_experiments(train, valid, test, lambdas=(1e-6,1e-4,1e-2,.1)):
 	
-	print "selecting optimal regularization parameter...\n"
+	print("selecting optimal regularization parameter...\n")
 	lambda_losses = regularized_batch_gradient_descent_plotter(train[0], train[1], valid[0], valid[1],lambdas=lambdas)
-	lambda_losses = np.array(lambda_losses)
-	opt_lambda = lambda_losses[np.argmin(lambda_losses,axis=0)[1]][0]
+	lambda_losses = np.array(list(lambda_losses))
+	argmin = np.argmin(lambda_losses,axis=0)[1]
+	opt_lambda = lambda_losses[argmin][0]
 
-	print "optimal regularization parameter selected {}\n".format(opt_lambda)
+	print("optimal regularization parameter selected {}\n".format(opt_lambda))
 	
-	w_hist, _ = regularized_grad_descent(train[0],train[1],lambda_reg=opt_lambda)
+	w_hist, loss_hist = regularized_grad_descent(train[0],train[1],lambda_reg=opt_lambda)
 	w = w_hist[-1]
+	loss = loss_hist[-1]
 
-	p = percent_match_supports(w,L.theta,threshold=0.)
-	print "\n","supports of w and theta match {}% below threshold of 0.".format(100*p)
-
-	p = percent_match_supports(w,L.theta,threshold=2.)
-	print "supports of w and theta match {}% below threshold of {}".format(100*p, 2.)
+	print("optimal loss {}".format(loss))
+	return w
 
 ##### Question 2
 def soft(a,delta):
@@ -173,7 +176,7 @@ def lasso(X,y,lamb,w_init=None,eps=10e-6):
 	diff = np.inf
 	while diff > eps:
 		w_old = w
-		for j in xrange(D):
+		for j in range(D):
 			a_j = 2*X[:,j].dot(X[:,j])
 			c_j = 2*X[:,j].dot(y - X.dot(w) + w[j]*X[:,j])
 			if a_j == 0. and c_j == 0.:
@@ -226,7 +229,7 @@ def lambda_lasso_cross_validation(X_train,y_train,X_valid,y_valid,lambdas=(1e-6,
 
 def homotopy_selection(scaling_factor=.9,eps=1e-6):
 
-	print "generating data...\n"
+	print("generating data...\n")
 	L = LinearSystem()
 	train, valid, test = L.split()
 
@@ -244,42 +247,44 @@ def homotopy_selection(scaling_factor=.9,eps=1e-6):
 		
 		w_old = w
 		w = lasso(X,y,lamb,w_init=w)
-		print "weights {}".format(w)
+		print("weights {}".format(w))
 
 		lamb *= scaling_factor
 		diff = (w_old-w).dot(w_old-w)
-		print diff
+		print(diff)
 		c += 1
 	
 	return w
 
-def lasso_experiments(var=1.0):
+def lasso_experiments(train, valid, test):
 	"""Experiments with lasso regression."""
 
-	print "generating data...\n"
-	L = LinearSystem(var=var)
-	train, valid, test = L.split()
-
-	print "selecting hyperparameter...\n"
+	print("selecting hyperparameter...\n")
 	lamb, w, loss = lambda_lasso_cross_validation(train[0],train[1],valid[0],valid[1])
 
-	print "optimal hyperparameter selected {}".format(lamb)
-
-	p = percent_match_supports(w,L.theta,threshold=.0)
-	print "supports of w and theta match percent {}% below a threshold of 0.".format(100*p)
-
-	p = percent_match_supports(w,L.theta,threshold=2.)
-	print "supports of w and theta match percent {}% below a threshold of {}".format(100*p,2.)
+	print("optimal hyperparameter selected {}, loss {}".format(lamb, loss))
+	return w
 
 def feature_correlation():
 	pass
 
 if __name__=='__main__':
 
-	# homotopy_selection()
-	ridge_experiments()
-	print "\n"
-	lasso_experiments()	
+	print("generating data...\n")
+	L = LinearSystem(var=.01)
+	train, valid, test = L.split()
+	print(L.theta)
+
+	w_r = ridge_experiments(train, valid, test)
+	print("\n")
+	w_l =lasso_experiments(train, valid, test)	
+
+	print("\n")
+	print(percent_match_supports(w_r, L.theta))
+	print(percent_match_complement_support(w_r, L.theta))
+	print("\n")
+	print(percent_match_supports(w_l,L.theta))
+	print(percent_match_complement_support(w_l, L.theta))
 	
 	if False:
 
@@ -291,4 +296,4 @@ if __name__=='__main__':
 		for i in range(-5,6):
 			Lambda 	= 10**i
 			w_opt 	= minimize(ridge(Lambda), w)
-			print Lambda, compute_loss(Lambda, w_opt.x)
+			print(Lambda, compute_loss(Lambda, w_opt.x))

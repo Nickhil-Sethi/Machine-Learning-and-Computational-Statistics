@@ -4,9 +4,11 @@ import logging
 
 import numpy as np
 import pandas as pd
+import matplotlib as mpl 
+mpl.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 
 #######################################
 ####Q2.1: Normalization
@@ -69,7 +71,7 @@ def compute_square_loss_gradient(X, y, theta):
     """
     #TODO
     (N,p) = np.shape(X)
-    grad = -(1/np.float(N))*np.array([(y - X.dot(theta))*X[:,i] for i in xrange(p)])
+    grad = -(1/np.float(N))*np.array([(y - X.dot(theta))*X[:,i] for i in range(p)])
     return np.sum(grad,axis=1)
 
     
@@ -116,7 +118,7 @@ def grad_checker(X, y, theta, epsilon=0.01, tolerance=1e-4):
     
     e  = np.eye(num_features)
     denominator = np.float(2*epsilon)
-    numerator  = np.array([ compute_square_loss(X_train,y_train,theta+epsilon*e[i]) - compute_square_loss(X_train,y_train,theta-epsilon*e[i]) for i in xrange(num_features) ] )
+    numerator  = np.array([ compute_square_loss(X_train,y_train,theta+epsilon*e[i]) - compute_square_loss(X_train,y_train,theta-epsilon*e[i]) for i in range(num_features) ] )
     diff = (true_gradient - numerator/denominator)
     
     return (diff.dot(diff) < tolerance)
@@ -295,14 +297,14 @@ def regularized_batch_gradient_descent_plotter(X_train,y_train,X_valid,y_valid,
     lambdas.sort()
 
     for lamb in lambdas:
-        print "running regularized l2 gradient descent with lambda = {}...".format(lamb)
+        print("running regularized l2 gradient descent with lambda = {}...".format(lamb))
         thetas, losses = regularized_grad_descent(X_train,y_train,alpha,lamb)
         train_losses.append(losses[-1])
         validation_losses.append(compute_square_loss(X_valid,y_valid,thetas[-1]))
 
     if plot_results:
         if 0. in lambdas:
-            print "warning: value of 0 found in lambdas, cannot plot on log scale!"
+            print("warning: value of 0 found in lambdas, cannot plot on log scale!")
         plt.plot(np.log(lambdas),train_losses,'b--')
         plt.plot(np.log(lambdas),validation_losses,'r--')
         plt.show()
@@ -355,7 +357,7 @@ def stochastic_grad_descent(X, y, alpha=0.1, lambda_reg=1, num_iter=1000, checki
             instance += 1
 
         if type(checkin) is int and epoch%checkin==0:
-            print "completed training epoch {}...".format(epoch)
+            print("completed training epoch {}...".format(epoch))
         
         epoch += 1
 
